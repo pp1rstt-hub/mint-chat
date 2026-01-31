@@ -21,7 +21,6 @@ export default function Chat() {
   }, []);
 
   const sendToDb = async (mediaData: string | null, type: string) => {
-    if (!text.trim() && !mediaData) return;
     try {
       await addDoc(collection(db, "messages"), {
         text: type === "text" ? text : "",
@@ -32,7 +31,7 @@ export default function Chat() {
       });
       setText("");
     } catch (e) {
-      alert("Занадто великий файл! Спробуй щось менше.");
+      alert("Помилка! Можливо файл занадто великий.");
     }
   };
 
@@ -65,61 +64,40 @@ export default function Chat() {
 
   if (!user) {
     return (
-      <div style={{backgroundColor:'#111b21', height:'100vh', display:'flex', justifyContent:'center', alignItems:'center', color:'white', fontFamily:'sans-serif'}}>
-        <div style={{backgroundColor:'#202c33', padding:'25px', borderRadius:'10px', textAlign:'center', width:'300px'}}>
-          <h2 style={{color:'#00a884', marginBottom:'20px'}}>Mint Chat</h2>
-          <input style={{width:'100%', padding:'10px', borderRadius:'5px', border:'none', backgroundColor:'#2a3942', color:'white', marginBottom:'15px', boxSizing:'border-box'}} 
-                 value={name} onChange={(e)=>setName(e.target.value)} placeholder="Ваше ім'я" />
-          <button style={{width:'100%', padding:'10px', backgroundColor:'#00a884', border:'none', borderRadius:'5px', fontWeight:'bold', cursor:'pointer'}} 
-                  onClick={()=>name && setUser(true)}>УВІЙТИ</button>
+      <div style={{backgroundColor: '#111b21', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'Arial'}}>
+        <h1 style={{color: '#00a884', fontSize: '40px', marginBottom: '30px'}}>Mint Chat</h1>
+        <div style={{backgroundColor: '#202c33', padding: '40px', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', textAlign: 'center'}}>
+          <input style={{width: '250px', padding: '15px', borderRadius: '8px', border: 'none', backgroundColor: '#2a3942', color: 'white', outline: 'none'}} 
+                 value={name} onChange={(e) => setName(e.target.value)} placeholder="Введіть ваше ім'я..." />
+          <button style={{display: 'block', width: '100%', marginTop: '20px', padding: '15px', backgroundColor: '#00a884', color: '#111b21', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer'}} 
+                  onClick={() => name && setUser(true)}>ПОЧАТИ ЧАТ</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{display:'flex', height:'100vh', backgroundColor:'#0b141a', color:'#e9edef', fontFamily:'sans-serif', justifyContent:'center'}}>
-      <div style={{width:'100%', maxWidth:'600px', display:'flex', flexDirection:'column', borderLeft:'1px solid #313d45', borderRight:'1px solid #313d45'}}>
-        {/* Шапка */}
-        <div style={{padding:'10px 15px', backgroundColor:'#202c33', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-          <span style={{fontWeight:'bold'}}>🔥 Chat Room</span>
-          <span style={{fontSize:'12px', color:'#00a884'}}>{name}</span>
+    <div style={{display: 'flex', height: '100vh', backgroundColor: '#0b141a', color: '#e9edef', fontFamily: 'Arial', overflow: 'hidden'}}>
+      {/* БОКОВА ПАНЕЛЬ */}
+      <div style={{width: '300px', backgroundColor: '#111b21', borderRight: '1px solid #313d45', display: 'flex', flexDirection: 'column'}}>
+        <div style={{padding: '20px', backgroundColor: '#202c33', display: 'flex', alignItems: 'center', gap: '15px'}}>
+          <div style={{width: '40px', height: '40px', backgroundColor: '#00a884', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'}}>{name[0]}</div>
+          <span style={{fontWeight: 'bold'}}>{name} (Ви)</span>
         </div>
-        
-        {/* Повідомлення */}
-        <div style={{flex:1, overflowY:'auto', padding:'15px', display:'flex', flexDirection:'column', gap:'8px', backgroundImage:'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")'}}>
-          {messages.map(msg => (
-            <div key={msg.id} style={{alignSelf: msg.sender === name ? 'flex-end' : 'flex-start', maxWidth:'85%'}}>
-              <div style={{backgroundColor: msg.sender === name ? '#005c4b' : '#202c33', padding:'6px 10px', borderRadius:'8px', boxShadow:'0 1px 1px rgba(0,0,0,0.2)'}}>
-                {msg.sender !== name && <div style={{fontSize:'10px', color:'#00a884', fontWeight:'bold', marginBottom:'2px'}}>{msg.sender}</div>}
-                {msg.type === 'text' && <div style={{fontSize:'14px', lineHeight:'1.4'}}>{msg.text}</div>}
-                {msg.type === 'image' && <img src={msg.mediaUrl} style={{maxWidth:'100%', borderRadius:'5px', marginTop:'3px'}} />}
-                {msg.type === 'audio' && <audio src={msg.mediaUrl} controls style={{height:'30px', width:'100%', marginTop:'3px'}} />}
-              </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Панель вводу */}
-        <div style={{padding:'10px', backgroundColor:'#202c33', display:'flex', alignItems:'center', gap:'10px'}}>
-          <label style={{cursor:'pointer', fontSize:'20px'}}>🖼️
-            <input type="file" hidden accept="image/*" onChange={handleFileUpload} />
-          </label>
-          
-          <button onMouseDown={startRecording} onMouseUp={()=>mediaRecorder.current?.stop()} 
-                  onTouchStart={startRecording} onTouchEnd={()=>mediaRecorder.current?.stop()}
-                  style={{background:'none', border:'none', fontSize:'20px', cursor:'pointer', color: isRecording ? 'red' : 'white'}}>
-            {isRecording ? '🛑' : '🎤'}
-          </button>
-
-          <input style={{flex:1, padding:'8px 12px', borderRadius:'20px', border:'none', backgroundColor:'#2a3942', color:'white', fontSize:'14px', outline:'none'}} 
-                 value={text} onChange={(e)=>setText(e.target.value)} 
-                 onKeyPress={(e)=>e.key === 'Enter' && sendToDb(null, 'text')} placeholder="Повідомлення" />
-          
-          <button onClick={()=>sendToDb(null, 'text')} style={{backgroundColor:'#00a884', border:'none', borderRadius:'50%', width:'35px', height:'35px', color:'white', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'}}>➤</button>
-        </div>
+        <div style={{padding: '20px', color: '#00a884', fontWeight: 'bold', borderBottom: '1px solid #313d45'}}>АКТИВНІ ЧАТИ</div>
+        <div style={{padding: '20px', backgroundColor: '#2a3942', cursor: 'pointer'}}>🔥 Загальна кімната</div>
       </div>
-    </div>
-  );
-}
+
+      {/* ВІКНО ЧАТУ */}
+      <div style={{flex: 1, display: 'flex', flexDirection: 'column', position: 'relative'}}>
+        <div style={{padding: '15px 20px', backgroundColor: '#202c33', zIndex: 10, boxShadow: '0 2px 5px rgba(0,0,0,0.3)'}}>
+          <h2 style={{margin: 0, fontSize: '18px'}}>Груповий чат</h2>
+        </div>
+
+        <div style={{flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '8px', backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundBlendMode: 'overlay', backgroundColor: '#0b141a'}}>
+          {messages.map((msg) => (
+            <div key={msg.id} style={{alignSelf: msg.sender === name ? 'flex-end' : 'flex-start', maxWidth: '70%'}}>
+              <div style={{backgroundColor: msg.sender === name ? '#005c4b' : '#202c33', padding: '8px 12px', borderRadius: '10px', boxShadow: '0 1px 2px rgba(0,0,0,0.3)'}}>
+                {msg.sender !== name && <div style={{fontSize: '11px', color: '#00a884', fontWeight: 'bold', marginBottom: '4px'}}>{msg.sender}</div>}
+                {msg.type === 'text' && <div style={{fontSize: '15px'}}>{msg.text}</div>}
+                {
