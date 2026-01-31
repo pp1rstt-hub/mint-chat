@@ -1,15 +1,14 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
-import { db, storage } from "../firebase"; // Переконайся, що файл firebase.js поруч
+import { useState, useEffect } from "react";
+import { db, storage } from "../firebase";
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function Chat() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(false);
   const [name, setName] = useState("");
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState("");
-  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     const q = query(collection(db, "messages"), orderBy("createdAt", "asc"));
@@ -18,7 +17,7 @@ export default function Chat() {
     });
   }, []);
 
-  const sendMessage = async (e, mediaUrl = null, type = "text") => {
+  const sendMessage = async (e: any, mediaUrl = null, type = "text") => {
     e?.preventDefault();
     if (!text.trim() && !mediaUrl) return;
     await addDoc(collection(db, "messages"), {
@@ -31,44 +30,39 @@ export default function Chat() {
     setText("");
   };
 
-  const uploadFile = async (e) => {
+  const uploadFile = async (e: any) => {
     const file = e.target.files[0];
     if (!file) return;
     const fileRef = ref(storage, `chat/${Date.now()}_${file.name}`);
     await uploadBytes(fileRef, file);
     const url = await getDownloadURL(fileRef);
-    sendMessage(null, url, file.type.includes("image") ? "image" : "file");
+    sendMessage(null, url, "image");
   };
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
-        <h1 className="text-3xl mb-4">Mint Chat</h1>
-        <input className="p-2 rounded text-black" value={name} onChange={(e) => setName(e.target.value)} placeholder="Твоє ім'я..." />
-        <button className="mt-4 bg-green-500 px-6 py-2 rounded" onClick={() => name && setUser(true)}>Увійти</button>
+      <div style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100vh', background:'#1a1a1a', color:'white'}}>
+        <h1>Mint Chat</h1>
+        <input style={{color:'black', padding:'10px'}} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ім'я" />
+        <button style={{marginTop:'10px', background:'green', padding:'10px 20px'}} onClick={() => name && setUser(true)}>Увійти</button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div style={{display:'flex', flexDirection:'column', height:'100vh', background:'#f0f0f0'}}>
+      <div style={{flex:1, overflowY:'auto', padding:'20px'}}>
         {messages.map((msg) => (
-          <div key={msg.id} className={`p-3 rounded-lg max-w-xs ${msg.sender === name ? "bg-green-500 text-white ml-auto" : "bg-white text-black"}`}>
-            <p className="text-xs opacity-75">{msg.sender}</p>
-            {msg.type === "text" && <p>{msg.text}</p>}
-            {msg.type === "image" && <img src={msg.mediaUrl} className="rounded-lg mt-2" alt="img" />}
-            {msg.type === "file" && <a href={msg.mediaUrl} target="_blank" className="underline">Файл/Голос</a>}
+          <div key={msg.id} style={{margin:'10px 0', padding:'10px', background: msg.sender === name ? '#dcf8c6' : 'white', alignSelf: msg.sender === name ? 'flex-end' : 'flex-start', borderRadius:'10px'}}>
+            <small>{msg.sender}</small>
+            {msg.type === "text" ? <p>{msg.text}</p> : <img src={msg.mediaUrl} style={{maxWidth:'200px', display:'block'}} />}
           </div>
         ))}
-        <div ref={messagesEndRef} />
       </div>
-      <form onSubmit={sendMessage} className="p-4 bg-white flex items-center gap-2">
-        <label className="cursor-pointer text-2xl">📎
-          <input type="file" className="hidden" onChange={uploadFile} />
-        </label>
-        <input className="flex-1 p-2 border rounded" value={text} onChange={(e) => setText(e.target.value)} placeholder="Повідомлення..." />
-        <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded">➤</button>
+      <form onSubmit={sendMessage} style={{padding:'20px', background:'white', display:'flex', gap:'10px'}}>
+        <input type="file" onChange={uploadFile} style={{width:'auto'}} />
+        <input style={{flex:1, padding:'10px'}} value={text} onChange={(e) => setText(e.target.value)} placeholder="Повідомлення" />
+        <button type="submit">Відправити</button>
       </form>
     </div>
   );
