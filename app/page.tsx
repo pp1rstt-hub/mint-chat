@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { db, storage } from "./firebase"; // Переконайся, що файл firebase.js поруч
+import { db, storage } from "../firebase"; // Переконайся, що файл firebase.js поруч
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
