@@ -19,64 +19,85 @@ export default function Chat() {
     });
   }, []);
 
-  const sendMessage = async (e: any) => {
+  const sendMessage = async (e: any, mediaUrl = null, type = "text") => {
     e?.preventDefault();
-    if (!text.trim()) return;
-    await addDoc(collection(db, "messages"), { text, sender: name, type: "text", createdAt: serverTimestamp() });
+    if (!text.trim() && !mediaUrl) return;
+    await addDoc(collection(db, "messages"), {
+      text: type === "text" ? text : "",
+      sender: name,
+      mediaUrl,
+      type,
+      createdAt: serverTimestamp(),
+    });
     setText("");
   };
 
-  const uploadFile = async (e: any) => {
+  const uploadFile = async (e: any, type: string) => {
     const file = e.target.files[0];
     if (!file) return;
     const fileRef = ref(storage, `chat/${Date.now()}_${file.name}`);
     await uploadBytes(fileRef, file);
     const url = await getDownloadURL(fileRef);
-    await addDoc(collection(db, "messages"), { mediaUrl: url, sender: name, type: "image", createdAt: serverTimestamp() });
+    sendMessage(null, url, type);
   };
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-[#111b21] text-white">
-        <h1 className="text-3xl font-bold mb-6 text-[#00a884]">Mint Chat</h1>
-        <div className="bg-[#202c33] p-8 rounded-lg w-80 shadow-2xl">
-          <input className="w-full p-3 rounded bg-[#2a3942] border-none mb-4 outline-none" 
-                 value={name} onChange={(e) => setName(e.target.value)} placeholder="Твоє ім'я" />
-          <button className="w-full bg-[#00a884] p-3 rounded font-bold text-[#111b21]" 
-                  onClick={() => name && setUser(true)}>УВІЙТИ</button>
+      <div style={{backgroundColor: '#111b21', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'Arial'}}>
+        <h1 style={{color: '#00a884', fontSize: '40px', marginBottom: '30px'}}>Mint Chat</h1>
+        <div style={{backgroundColor: '#202c33', padding: '40px', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', textAlign: 'center'}}>
+          <input style={{width: '250px', padding: '15px', borderRadius: '8px', border: 'none', backgroundColor: '#2a3942', color: 'white', outline: 'none'}} 
+                 value={name} onChange={(e) => setName(e.target.value)} placeholder="Введіть ваше ім'я..." />
+          <button style={{display: 'block', width: '100%', marginTop: '20px', padding: '15px', backgroundColor: '#00a884', color: '#111b21', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer'}} 
+                  onClick={() => name && setUser(true)}>ПОЧАТИ ЧАТ</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-[#0b141a] text-[#e9edef]">
-      <div className="w-1/4 border-r border-[#313d45] hidden md:flex flex-col bg-[#111b21]">
-        <div className="p-4 bg-[#202c33] font-bold border-b border-[#313d45]">{name}</div>
-        <div className="p-4 text-[#00a884]">Активні чати</div>
+    <div style={{display: 'flex', height: '100vh', backgroundColor: '#0b141a', color: '#e9edef', fontFamily: 'Arial', overflow: 'hidden'}}>
+      {/* БОКОВА ПАНЕЛЬ */}
+      <div style={{width: '300px', backgroundColor: '#111b21', borderRight: '1px solid #313d45', display: 'flex', flexDirection: 'column'}}>
+        <div style={{padding: '20px', backgroundColor: '#202c33', display: 'flex', alignItems: 'center', gap: '15px'}}>
+          <div style={{width: '40px', height: '40px', backgroundColor: '#00a884', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'}}>{name[0]}</div>
+          <span style={{fontWeight: 'bold'}}>{name} (Ви)</span>
+        </div>
+        <div style={{padding: '20px', color: '#00a884', fontWeight: 'bold', borderBottom: '1px solid #313d45'}}>АКТИВНІ ЧАТИ</div>
+        <div style={{padding: '20px', backgroundColor: '#2a3942', cursor: 'pointer'}}>🔥 Загальна кімната</div>
       </div>
 
-      <div className="flex-1 flex flex-col bg-[#0b141a] relative">
-        <div className="p-4 bg-[#202c33] border-b border-[#313d45] font-bold">🔥 Загальна кімната</div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar" style={{backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')", backgroundBlendMode: 'overlay', backgroundColor: '#0b141a'}}>
+      {/* ВІКНО ЧАТУ */}
+      <div style={{flex: 1, display: 'flex', flexDirection: 'column', position: 'relative'}}>
+        <div style={{padding: '15px 20px', backgroundColor: '#202c33', zIndex: 10, boxShadow: '0 2px 5px rgba(0,0,0,0.3)'}}>
+          <h2 style={{margin: 0, fontSize: '18px'}}>Груповий чат</h2>
+        </div>
+
+        <div style={{flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '8px', backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundBlendMode: 'overlay', backgroundColor: '#0b141a'}}>
           {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.sender === name ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[70%] p-2 px-3 rounded-lg shadow ${msg.sender === name ? "bg-[#005c4b]" : "bg-[#202c33]"}`}>
-                <p className="text-[10px] text-[#00a884] font-bold">{msg.sender}</p>
-                {msg.type === "text" ? <p className="text-sm">{msg.text}</p> : <img src={msg.mediaUrl} className="rounded max-w-full mt-1" />}
+            <div key={msg.id} style={{alignSelf: msg.sender === name ? 'flex-end' : 'flex-start', maxWidth: '70%'}}>
+              <div style={{backgroundColor: msg.sender === name ? '#005c4b' : '#202c33', padding: '8px 12px', borderRadius: '10px', boxShadow: '0 1px 2px rgba(0,0,0,0.3)'}}>
+                <div style={{fontSize: '11px', color: '#00a884', fontWeight: 'bold', marginBottom: '4px'}}>{msg.sender}</div>
+                {msg.type === 'text' && <div style={{fontSize: '15px'}}>{msg.text}</div>}
+                {msg.type === 'image' && <img src={msg.mediaUrl} style={{maxWidth: '100%', borderRadius: '8px', marginTop: '5px', border: '1px solid #313d45'}} />}
+                {msg.type === 'audio' && <audio src={msg.mediaUrl} controls style={{marginTop: '5px', height: '35px', width: '200px'}} />}
               </div>
             </div>
           ))}
           <div ref={messagesEndRef} />
         </div>
 
-        <form onSubmit={sendMessage} className="p-3 bg-[#202c33] flex items-center gap-2">
-          <label className="cursor-pointer text-2xl px-2">
-            📎 <input type="file" className="hidden" onChange={uploadFile} />
+        {/* ПАНЕЛЬ ВВОДУ */}
+        <form onSubmit={sendMessage} style={{padding: '10px 20px', backgroundColor: '#202c33', display: 'flex', alignItems: 'center', gap: '15px'}}>
+          <label title="Картинка" style={{cursor: 'pointer', fontSize: '24px'}}>🖼️
+            <input type="file" hidden accept="image/*" onChange={(e) => uploadFile(e, 'image')} />
           </label>
-          <input className="flex-1 p-2 bg-[#2a3942] rounded-lg outline-none" 
-                 value={text} onChange={(e) => setText(e.target.value)} placeholder="Повідомлення..." />
-          <button type="submit" className="bg-[#00a884] p-2 rounded-full w-10 h-10 flex items-center justify-center">➤</button>
+          <label title="Голосове" style={{cursor: 'pointer', fontSize: '24px'}}>🎤
+            <input type="file" hidden accept="audio/*" onChange={(e) => uploadFile(e, 'audio')} />
+          </label>
+          <input style={{flex: 1, padding: '12px 20px', borderRadius: '25px', border: 'none', backgroundColor: '#2a3942', color: 'white', fontSize: '15px', outline: 'none'}} 
+                 value={text} onChange={(e) => setText(e.target.value)} placeholder="Напишіть повідомлення..." />
+          <button type="submit" style={{backgroundColor: '#00a884', border: 'none', borderRadius: '50%', width: '45px', height: '45px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '20px'}}>➤</button>
         </form>
       </div>
     </div>
